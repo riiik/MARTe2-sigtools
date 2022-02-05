@@ -1,0 +1,23 @@
+# Debian Bullseye Deployment
+
+Using both docker and a standard x86_64 full install, the following issues had to be
+finessed to get the first example configuration to run with the latest develop branches.
+
+## STapp-0004-Waveform-1.cfg
+
+Hard coded non-standard path of "/localtmp" is a hangover from Docker attempts to keep 
+a clear separation of the host and guest filesystems.  Easy solution is mkdir /localtmp
+but this then falls in the trap of assuming that the user has root privileges.
+
+Fix : use "/var/tmp" in place of "/localtmp" which works with docker -v/var/tmp:/var/tmp
+
+Learning point : PATH dependent aspects of CFG files are easily made fragile.
+
+## EPICS build
+
+## Startup Noise
+
+The message "LoadableLibrary: Failed dlopen()" for intentionally non-existent shared objects is irritating.
+e.g. LinuxTimer.drv searched for, but LinuxTimer.so provided.  The source of this message is 
+MARTe2-dev/Source/Core/BareMetal/L1Portability/Environment/Linux/LoadableLibrary.cpp
+

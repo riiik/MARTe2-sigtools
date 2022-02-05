@@ -1,0 +1,3 @@
+Host github.com-sigtools
+	Hostname github.com
+	IdentityFile=/keys/id_ecsda-gh-MARTe2-sigtools

@@ -1,0 +1,227 @@
+#!/usr/bin/env bash
+#
+# Run exercise : 0004-Waveform-1
+#
+# Issues
+#
+# TODO  Provide a usage() option.
+# WIBNI Provide some bash autocompletion help.
+# WIBNI Add more powerful ways to assist with valid state/message options.
+#
+#
+#set -x
+
+export RESTART_DELAY=2
+# Force this script to be run in the background if we are really starting a MARTe process
+
+if [ $# -ge 1 ] && [ "$1" == "start" ]
+then
+if [ "$running_self_bg" != "running_self_bg" ]
+then
+	logger -plocal0.notice "Restarting self in background in $RESTART_DELAY"
+	export running_self_bg="running_self_bg"
+	sleep $RESTART_DELAY
+	nohup "$0" "$@" 2>&1 > /var/tmp/ex1.$BASHPID.bg.log &
+	exit
+fi
+fi
+
+CFG="STapp-0004-Waveform-1.cfg"
+
+SCRIPT="$0"
+export SCRIPT_NAME=$(basename $(realpath "$SCRIPT"))
+SCRIPT_DIR=$(dirname $(realpath "$SCRIPT"))
+M2_SCRIPT_PATH="$SCRIPT_DIR/m2"
+LOGDIR=$(realpath $(dirname "$SCRIPT_DIR")/logs)
+LASTLOG=$(realpath $(SCRIPTDIR)/last.ex1.log)
+MARTE2_LOGFILE="$LOGDIR/$SCRIPT_NAME.MARTe2.${CFG}.$(date +%s).$BASHPID.log"
+LOGFILE=/var/tmp/"$SCRIPT_NAME.$BASHPID.sh.log"
+PIDFILE=/var/tmp/"$SCRIPT_NAME.pid"
+mystatus="initialising"
+
+usage() {
+  echo "$SCRIPT_NAME :[start|status|stop]"
+  echo
+  echo "Run MARTe2-sigtools example"
+  exit 0
+}
+
+
+#
+function check_status() {
+  
+  if [ -f ${PIDFILE}  ]
+  then
+    echo "$SCRIPT_NAME is already running : $PIDFILE"
+    mystatus="running"
+  else
+    echo "$SCRIPT_NAME is not running : no $PIDFILE"
+    mystatus="stopped"
+  fi
+  
+  nruns=$(grep MARTe2-sigtools /var/log/messages | grep example | wc -l)
+  if [[ $nruns -ge 1 ]]
+  then
+    echo "MARTe2-sigtools exercises run on $(hostname) today : $nruns"
+    lastrun=$(grep MARTe2-sigtools /var/log/messages | grep example | tail -1)
+    last_start=${lastrun/%\ *}
+    curr_time=$(date +%s)
+    elapsed=$(( last_start - curr_time ))
+    echo "Last run was $elapsed seconds ago"
+  else
+    echo "MARTe2-sigtools exercises run on $(hostname) today : 0 $nruns"
+  fi
+}
+
+
+function do_start() {
+  echo "Starting $BASHPID"
+  echo "$BASHPID $SCRIPT_NAME" > ${PIDFILE}
+  logger -plocal0.notice "MARTe2-sigtools example $CFG started at time: $(date +%s)"
+}
+
+function do_stop() {
+  check_status
+  case "$mystatus" in
+    stopped)
+      echo "$SCRIPT_NAME is not running :no $PIDFILE exists"
+      exit 0
+    ;;
+    running)
+      # Check that pid STILL matches SCRIPT NAME
+      proc_live=$(pgrep -l -o "$SCRIPT_NAME")
+      if [ $? != 0 ]
+      then
+        echo "No live process found.  Tidy old pid file"
+        rm -f ${PIDFILE}
+        exit 0
+      else
+        echo "Running process found.  Check against pidfile."
+        proc_was=$(head -1 $PIDFILE)
+        if [[ "$proc_pidfile" == "$proc_live" ]]
+        then
+          echo "Running process matches PIDFILE data.  Shutting it down"
+          killpid=${proc_live/%\ *}
+          echo "proc_live is $proc_live and killpid is $killpid"
+          echo kill -TERM $killpid
+        fi
+      fi
+  esac
+}
+
+if [[ $# -eq 1 ]]
+then
+  case "$1" in
+    start)
+      check_status
+      echo "mystatus is $mystatus"
+      if [ "$mystatus" == "running" ]
+      then
+        echo "$SCRIPT_NAME is already running : $PIDFILE exists"
+        cat ${PIDFILE}
+        exit 63
+      else
+        do_start
+      fi
+    ;;
+    status)
+      check_status
+      exit 72
+    ;;
+    stop)
+      do_stop
+      exit 80
+    ;;
+    *)
+      echo "Unexpected argument $1"
+      usage
+    ;;
+  esac
+else
+  usage
+fi
+#
+#
+# Initialisation of this example selects the Run state
+#
+OPT_TYPE="-s"
+OPT_ARG="Run"
+
+#
+# Precondition : no file /var/tmp/
+#
+echo "Started ${SCRIPT_NAME} at $(date)" >> ${LOGFILE}
+ln -sf ${LOGFILE} ${LASTLOG}
+#
+# Postcondition : non zero sized file /var/tmp
+#
+
+#
+# Signal Handling
+#
+function post_cleanup()
+{
+  echo "post_cleanup" running >> ${MARTE2_LOGFILE}
+  echo "Running child processes" >> ${MARTE2_LOGFILE}
+  if children=$(pgrep -P "$BASHPID")
+  then
+    for child in $children
+    do
+      echo "$child" >> ${MARTE2_LOGFILE}
+    done
+  fi
+}
+
+#trap post_cleanup INT
+function monitor()
+{
+  echo "$BASHID is still running" | stdbuf --output=L | tee -a ${LOGFILE}
+  exit
+}
+trap monitor USR1
+
+#
+# MARTe execution
+#
+function marte2_run() {
+  runstyle=$1
+  if [ -f "$M2_SCRIPT_PATH" ]
+  then
+    echo "Starting $0 as pid $BASHPID"
+    echo "Precondition  : P"
+    echo "Postcondition : Q"
+    echo "Log to ${MARTE2_LOGFILE}"
+    echo "Send SIGINT (Ctrl-C) if running foreground to end test"
+    echo "Send SIGUSR1 if running background"
+    
+    case "$runstyle" in
+      interactive|foreground|fg)
+        "$M2_SCRIPT_PATH" "$CFG" "$OPT_TYPE" "$OPT_ARG" 2>&1 | tee ${MARTE2_LOGFILE}
+      ;;
+      background|bg)
+        "$M2_SCRIPT_PATH" "$CFG" "$OPT_TYPE" "$OPT_ARG" 2>&1 > ${MARTE2_LOGFILE} &
+      ;;
+      *)
+        echo "runstyle $runstyle not supported"
+      ;;
+    esac
+  else
+    echo "$M2_SCRIPT_PATH not found.  Bailing out"
+    exit 54
+  fi
+}
+
+if [ $# -gt 1 ]
+then
+  echo $0 : running background
+  marte2_run $1
+else
+  echo $0 : running interactively
+  marte2_run interactive
+fi
+
+
+
+
+
+

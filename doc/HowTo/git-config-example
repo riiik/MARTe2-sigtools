@@ -1,0 +1,2 @@
+git config --global user.name Real User (via docker+key)
+git config --global user.email real.user@real.domain
