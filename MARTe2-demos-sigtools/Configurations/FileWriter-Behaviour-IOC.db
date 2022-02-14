@@ -1,0 +1,69 @@
+record( longin, "FileWriter-Behaviour:STATUS")
+{
+   field(DTYP, "Soft Channel")
+}
+
+record( longin, "FileWriter-Behaviour:COMMAND")
+{
+   field(DTYP, "Soft Channel")
+}
+
+record( longin, "FileWriter-Behaviour:FILE")
+{
+   field(DTYP, "Soft Channel")
+}
+
+record( longin, "FileWriter-Behaviour:RESET")
+{
+   field(DTYP, "Soft Channel")
+}
+
+record( ai, "FileWriter-Behaviour:MEASUREMENT0")
+{
+   field(DTYP, "Soft Channel")
+}
+
+record( waveform, "FileWriter-Behaviour:HIST-IDLE-CT")
+{
+   field(DTYP, "Soft Channel")
+   field(NELM, 10)
+   field(FTVL, "LONG")
+}
+
+record( waveform, "FileWriter-Behaviour:HIST-RUN-CT")
+{
+   field(DTYP, "Soft Channel")
+   field(NELM, 10)
+   field(FTVL, "LONG")
+}
+
+record( longin, "FileWriter-Behaviour:TIME")
+{
+   field(DTYP, "Soft Channel")
+}
+
+record( longin, "FileWriter-Behaviour:COUNTER")
+{
+   field(DTYP, "Soft Channel")
+}
+
+record( ai, "FileWriter-Behaviour:ADC0S")
+{
+   field(DTYP, "Soft Channel")
+}
+
+record( ai, "FileWriter-Behaviour:ADC1S")
+{
+   field(DTYP, "Soft Channel")
+}
+
+record( ai, "FileWriter-Behaviour:ADC2S")
+{
+   field(DTYP, "Soft Channel")
+}
+
+record( ai, "FileWriter-Behaviour:ADC3S")
+{
+   field(DTYP, "Soft Channel")
+}
+
